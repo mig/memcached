@@ -6,7 +6,7 @@ $GMAKE_CMD = ENV['GMAKE_CMD']
 
 HERE = ENV['HERE']
 
-BSD = RbConfig::CONFIG['build_os'] =~ /^freebsd|^openbsd/
+BSD = RbConfig::CONFIG['build_os'] =~ /^freebsd|openbsd/
 
 Dir.chdir(HERE)
 

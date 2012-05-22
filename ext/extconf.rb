@@ -5,7 +5,10 @@ HERE = File.expand_path(File.dirname(__FILE__))
 BUNDLE_PATH = Dir.glob("libmemcached-*").first
 
 SOLARIS_32 = Config::CONFIG['target'] == "i386-pc-solaris2.10"
-BSD = Config::CONFIG['host_os'].downcase =~ /bsd/
+
+OPENBSD = Config::CONFIG['host_os'] =~ /^openbsd/
+FREEBSD = Config::CONFIG['host_os'] =~ /^freebsd/
+BSD = OPENBSD || FREEBSD
 
 $CFLAGS = "#{Config::CONFIG['CFLAGS']} #{$CFLAGS}".gsub("$(cflags)", "").gsub("-fno-common", "").gsub("-Werror=declaration-after-statement", "")
 $CFLAGS << " -std=gnu99" if SOLARIS_32
@@ -19,14 +22,24 @@ $CC = "CC=#{Config::MAKEFILE_CONFIG["CC"].inspect}"
 LIBM_CFLAGS = defined?(JRUBY_VERSION) ? "-fPIC -g -O2" : $CFLAGS
 LIBM_LDFLAGS = defined?(JRUBY_VERSION) ? "-fPIC -lsasl2 -lm" : $LDFLAGS
 
-GMAKE_CMD = Config::CONFIG['host_os'].downcase =~ /bsd|solaris/ ? "gmake" : "make"
-TAR_CMD = SOLARIS_32 ? 'gtar' : 'tar'
-PATCH_CMD = SOLARIS_32 ? 'gpatch' : 'patch'
+GMAKE_CMD = (BSD || SOLARIS_32) ? "gmake" : "make"
+TAR_CMD = (BSD || SOLARIS_32) ? "gtar" : "tar"
+PATCH_CMD = SOLARIS_32 ? "gpatch" : "patch"
 
 if ENV['DEBUG']
   puts "Setting debug flags."
   $CFLAGS << " -O0 -ggdb -DHAVE_DEBUG"
   $EXTRA_CONF = ""
+end
+
+if OPENBSD
+  " --with-libsasl2-prefix=/usr/local".tap do |switch| 
+   if $EXTRA_CONF.nil?
+      $EXTRA_CONF = switch 
+    else
+      $EXTRA_CONF << switch
+    end
+  end
 end
 
 def run(cmd, reason)
@@ -41,6 +54,7 @@ def check_libmemcached
   $includes = " -I#{HERE}/include"
   $defines = " -DLIBMEMCACHED_WITH_SASL_SUPPORT"
   $libraries = " -L#{HERE}/lib"
+  $libraries << " -L/usr/local/lib" if OPENBSD
   $CFLAGS = "#{$includes} #{$libraries} #{$CFLAGS}"
   $LDFLAGS = "-lsasl2 -lm #{$libraries} #{$LDFLAGS}"
   $LIBPATH = ["#{HERE}/lib"]

@@ -1,6 +1,7 @@
 #include "common.h"
 
 /* Byte swap a 64-bit number. */
+#ifndef swap64
 static inline uint64_t swap64(uint64_t in) 
 {
 #ifndef BYTEORDER_BIG_ENDIAN
@@ -19,6 +20,7 @@ static inline uint64_t swap64(uint64_t in)
   return in;
 #endif
 }
+#endif
 
 uint64_t ntohll(uint64_t value)
 {
